@@ -1,17 +1,13 @@
 # Workflows
 
 
-## Functionality to support
-P0's
-- Recording things. 
-- List'ing workflows
-- Running workflows
-- works for windows powershell
+## Functionality left to support
+P0:
+- Works on init
 
 P1's
-- deleting workflows
-- Relative vs absolute workflows
 - Support other platforms
+- Relative vs absolute workflows
 
 Commands to support
 - wf start:
@@ -26,3 +22,12 @@ Commands to support
     * run a specified binary
 
 
+# Done:
+P0's
+- Recording things. 
+- List'ing workflows
+- Running workflows
+- works for windows powershell
+
+P1's
+- deleting workflows

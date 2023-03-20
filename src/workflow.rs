@@ -13,6 +13,7 @@ static HOME: &'static str = "USERPROFILE";
 static WORKFLOW_HOME_PATH: &'static str = "\\workflows\\home\\";
 static WORKFLOW_CONFIG_PATH: &'static str = "\\workflows\\config";
 
+
 fn prepend_env(env: &str, path: &str) -> Result<PathBuf> {
     let my_directory = env::var(env)?;
     return Ok(PathBuf::from(my_directory + path));  
@@ -21,6 +22,7 @@ fn prepend_env(env: &str, path: &str) -> Result<PathBuf> {
 
 pub fn list_workflows() -> Result<Vec<OsString>> {
     let mut wfs = Vec::new();
+    fs::create_dir_all(prepend_env(HOME, WORKFLOW_HOME_PATH)?)?;
     let paths = fs::read_dir(prepend_env(HOME, WORKFLOW_HOME_PATH)?)?;
 
     for path in paths {
@@ -70,11 +72,12 @@ pub fn save(workflow: &[&str]) -> Result<()> {
 /// Top level function: Start's the workflow process
 /// 
 pub fn start() -> Result<()> {
-    // could do nothing ... or could push the current directory to the stack
+    fs::create_dir_all(prepend_env(HOME, WORKFLOW_HOME_PATH)?)?;
+    let mut file = File::create(prepend_env(HOME, WORKFLOW_CONFIG_PATH)?)?;
+
+    // write the current directory to the temp file
     let current_dir = env::current_dir()?;
     let cmd = format!("cd {}", current_dir.display());
-
-    let mut file = File::create(prepend_env(HOME, WORKFLOW_CONFIG_PATH)?)?;
     writeln!(file, "{}", cmd)?;
     drop(file);
     Ok(())
@@ -96,6 +99,8 @@ pub fn fin() -> Result<()>{
         }
     }
 
+    // double check that this folder exists
+    fs::create_dir_all(prepend_env(HOME, WORKFLOW_HOME_PATH)?)?;
     // finally we need to read from the config and get the starting path of the workflow
     let start_cmd = fs::read_to_string(prepend_env(HOME, WORKFLOW_CONFIG_PATH)?)?;
     if !start_cmd.contains("cd") {
@@ -198,7 +203,6 @@ pub fn print(name: &str) -> Result<()> {
         println!();
         return list()
     }
-
 
     let wf_home_path = prepend_env(HOME, WORKFLOW_HOME_PATH)?;
     let script_path = format!("{}{}{}", wf_home_path.as_path().display(), name, SCRIPT_EXTENSION);
