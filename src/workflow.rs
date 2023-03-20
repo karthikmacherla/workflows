@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
-use std::{env, fs::{self, File, OpenOptions}, io::{Write}, ffi::{OsString}, process::{Command, Stdio}, fmt::format, path::PathBuf};
+use std::{env, fs::{self, File, OpenOptions}, io::{Write, BufReader, BufRead}, ffi::{OsString}, process::{Command, Stdio}, fmt::format, path::PathBuf};
 
 use crate::types::*;
 
@@ -14,9 +14,7 @@ static WORKFLOW_HOME_PATH: &'static str = "\\workflows\\home\\";
 static WORKFLOW_CONFIG_PATH: &'static str = "\\workflows\\config";
 
 fn prepend_env(env: &str, path: &str) -> Result<PathBuf> {
-    println!("{}", env);
     let my_directory = env::var(env)?;
-    println!("{}", my_directory);
     return Ok(PathBuf::from(my_directory + path));  
 }
 
@@ -60,7 +58,6 @@ pub fn save(workflow: &[&str]) -> Result<()> {
     // create a new file with the following name
     let wf_home_path = prepend_env(HOME, WORKFLOW_HOME_PATH)?;
     let output_file = format!("{}{}{}", wf_home_path.as_path().display(), name.trim(), SCRIPT_EXTENSION);
-    println!("{}", output_file);
     let mut file = File::create(output_file)?;
 
     for line in workflow.iter().rev() {
@@ -161,7 +158,6 @@ pub fn run(name: &str) -> Result<()> {
 
     let wf_home_path = prepend_env(HOME, WORKFLOW_HOME_PATH)?;
     let script_path = format!("{}{}{}", wf_home_path.as_path().display(), name, SCRIPT_EXTENSION);
-    println!("{}", script_path);
 
     // run the workflow
     let mut output = Command::new("powershell")
@@ -173,6 +169,51 @@ pub fn run(name: &str) -> Result<()> {
         .spawn()?;
 
     output.wait()?;
+
+    Ok(())
+}
+
+pub fn delete(name: &str) -> Result<()> {
+    if !is_existing_workflow(name) {
+        println!("Not a valid workflow!");
+        println!();
+        return list()
+    }
+
+
+    let wf_home_path = prepend_env(HOME, WORKFLOW_HOME_PATH)?;
+    let script_path = format!("{}{}{}", wf_home_path.as_path().display(), name, SCRIPT_EXTENSION);
+
+    match fs::remove_file(script_path) {
+        Ok(()) => println!("Successfully deleted workflow: {}", name),
+        Err(e) => println!("Error deleting workflow: {}", e)
+    }
+
+    Ok(())
+}
+
+pub fn print(name: &str) -> Result<()> {
+    if !is_existing_workflow(name) {
+        println!("Not a valid workflow!");
+        println!();
+        return list()
+    }
+
+
+    let wf_home_path = prepend_env(HOME, WORKFLOW_HOME_PATH)?;
+    let script_path = format!("{}{}{}", wf_home_path.as_path().display(), name, SCRIPT_EXTENSION);
+
+    let script = File::open(script_path)?;
+    let rdr = BufReader::new(script);
+
+    println!("Displaying workflow for {}:", name);
+    for line in rdr.lines() {
+        let line = line?;
+        println!("{}", line);
+    }
+
+
+    println!("\nTo manually update an existing script, open the script located at: {}", wf_home_path.as_path().display());
 
     Ok(())
 }

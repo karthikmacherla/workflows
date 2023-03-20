@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use crate::workflow::{fin, start, list, run};
+use crate::workflow::{fin, start, list, run, print, delete};
 use crate::types::*;
 
 pub mod workflow;
@@ -10,7 +10,7 @@ pub mod types;
  * 
  * 
  */
-#[derive(clap::Subcommand, Debug)]
+#[derive(clap::Subcommand, Debug)]  
 enum Action {
    Start,
    Fin,
@@ -18,8 +18,12 @@ enum Action {
    Run {
       workflow_name: String,
    },
-   Print,
-   Delete
+   Print {
+      workflow_name: String,
+   },
+   Delete {
+      workflow_name: String,
+   }
 }
 
 /// Simple program to greet a person
@@ -43,8 +47,8 @@ fn main()  -> Result<()> {
       Fin => fin()?,
       Run { workflow_name } => run(&workflow_name)?,
       List => list()?,
-      Print => (),
-      Delete => ()
+      Print { workflow_name } => print(&workflow_name)?,
+      Delete { workflow_name } => delete(&workflow_name)?,
    };
 
    Ok(())
