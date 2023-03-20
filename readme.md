@@ -6,7 +6,9 @@ P0:
 - Works on init
 
 P1's
-- Support other platforms
+- Support other platforms 
+    * in order to do this right, I think I need to just build a completely separate utility that works for zsh. I *could* make it work but it won't always be more accurate. 
+    It's better for the user to request the specific package for the shell they're running rather than have it automatically figure out and fail. 
 - Relative vs absolute workflows
 
 Commands to support
@@ -20,6 +22,7 @@ Commands to support
     * list the open file names
 - wf run --name name
     * run a specified binary
+- wf alias
 
 
 # Done:

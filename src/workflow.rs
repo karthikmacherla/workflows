@@ -11,6 +11,7 @@ static POWERSHELL_HISTORY_PATH: &'static str = "\\Microsoft\\Windows\\PowerShell
 //should have $HOME prepended
 static HOME: &'static str = "USERPROFILE";
 static WORKFLOW_HOME_PATH: &'static str = "\\workflows\\home\\";
+static WORKFLOW_START_PATH: &'static str = "\\workflows\\current_dir";
 static WORKFLOW_CONFIG_PATH: &'static str = "\\workflows\\config";
 
 
@@ -18,7 +19,6 @@ fn prepend_env(env: &str, path: &str) -> Result<PathBuf> {
     let my_directory = env::var(env)?;
     return Ok(PathBuf::from(my_directory + path));  
 }
-
 
 pub fn list_workflows() -> Result<Vec<OsString>> {
     let mut wfs = Vec::new();
@@ -40,6 +40,10 @@ pub fn is_existing_workflow(name: &str) -> bool {
         return list.contains(&osstr);
     }
     return false;
+}
+
+pub fn get_alias() -> Option<String> {
+    fs::read_to_string(prepend_env(HOME, WORKFLOW_CONFIG_PATH).unwrap_or_default()).ok()
 }
 
 pub fn save(workflow: &[&str]) -> Result<()> {
@@ -69,11 +73,19 @@ pub fn save(workflow: &[&str]) -> Result<()> {
     Ok(())
 }
 
-/// Top level function: Start's the workflow process
-/// 
+
+/**
+ * Start of the workflow commands we need to support
+ * - start
+ * - fin
+ * - list
+ * - run
+ * - delete
+ * - printS
+ */
 pub fn start() -> Result<()> {
     fs::create_dir_all(prepend_env(HOME, WORKFLOW_HOME_PATH)?)?;
-    let mut file = File::create(prepend_env(HOME, WORKFLOW_CONFIG_PATH)?)?;
+    let mut file = File::create(prepend_env(HOME, WORKFLOW_START_PATH)?)?;
 
     // write the current directory to the temp file
     let current_dir = env::current_dir()?;
@@ -89,9 +101,15 @@ pub fn fin() -> Result<()>{
 
     let mut workflow = Vec::new();
     let mut cnt = 0;
-
+    
+    let mut start_alias = "workflows.exe start".to_string();
+    start_alias = match get_alias() {
+        Some(s) => if !s.is_empty() { s.trim().to_string() } else { start_alias },
+        None => start_alias
+    };
+    
     for line in text.lines().rev() {
-        if line.contains("workflows.exe start") || cnt > 50 {
+        if line.contains(&start_alias) || cnt > 50 {
             break;   
         } else {
             workflow.push(line);
@@ -102,7 +120,7 @@ pub fn fin() -> Result<()>{
     // double check that this folder exists
     fs::create_dir_all(prepend_env(HOME, WORKFLOW_HOME_PATH)?)?;
     // finally we need to read from the config and get the starting path of the workflow
-    let start_cmd = fs::read_to_string(prepend_env(HOME, WORKFLOW_CONFIG_PATH)?)?;
+    let start_cmd = fs::read_to_string(prepend_env(HOME, WORKFLOW_START_PATH)?)?;
     if !start_cmd.contains("cd") {
         return Err(Error::StartPathNotSetError);
     }
@@ -170,6 +188,7 @@ pub fn run(name: &str) -> Result<()> {
         .arg("Unrestricted")
         .arg("-File")
         .arg(script_path)
+        .env("LS_COLORS", "rs=0:di=38;5;27:mh=44;38;5;15")
         .stdout(Stdio::inherit())
         .spawn()?;
 
@@ -219,5 +238,35 @@ pub fn print(name: &str) -> Result<()> {
 
     println!("\nTo manually update an existing script, open the script located at: {}", wf_home_path.as_path().display());
 
+    Ok(())
+}
+
+pub fn test() -> Result<()> {
+    if let Ok(shell) = env::var("SHELL") {
+        println!("The shell running this program is: {}", shell);
+    } else {
+        println!("Unable to determine the shell.");
+    }
+
+    Ok(())
+}
+
+
+pub fn alias(name: Option<String>) -> Result<()> {
+    fs::create_dir_all(prepend_env(HOME, WORKFLOW_HOME_PATH)?)?;
+
+    // this is a get alias command
+    if name.is_none() {
+        // open the config and read out the current alias
+        let alias = fs::read_to_string(prepend_env(HOME, WORKFLOW_CONFIG_PATH)?).unwrap_or_default();
+        println!("The current start is (empty if no alias set): {}", alias.trim());
+        return Ok(())
+    }
+
+    let name = name.unwrap();
+    let mut file = File::create(prepend_env(HOME, WORKFLOW_CONFIG_PATH)?)?;
+    writeln!(file, "{}", &name)?;
+
+    println!("Successfully set the start alias to: {}", &name);
     Ok(())
 }
