@@ -1,14 +1,15 @@
 
 #[derive(Debug)]
 pub enum Error {
+    StartPathNotSetError,
     // Non-crate errors
-    VarError,
+    VarError(std::env::VarError),
     IOError(std::io::Error)
 }
 
 impl From<std::env::VarError> for Error {
-    fn from(_: std::env::VarError) -> Self {
-        Error::VarError
+    fn from(e: std::env::VarError) -> Self {
+        Error::VarError(e)
     }
 }
 

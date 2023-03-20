@@ -1,6 +1,6 @@
 use clap::Parser;
 
-use crate::workflow::{fin, start};
+use crate::workflow::{fin, start, list, run};
 use crate::types::*;
 
 pub mod workflow;
@@ -15,7 +15,10 @@ enum Action {
    Start,
    Fin,
    List, 
-   Run,
+   Run {
+      workflow_name: String,
+   },
+   Print,
    Delete
 }
 
@@ -25,8 +28,6 @@ enum Action {
 struct Args {
    #[command(subcommand)]
    action: Action,
-
-   name: String
 }
 
 // Rust program that listens to terminal commands
@@ -34,14 +35,16 @@ struct Args {
 
 fn main()  -> Result<()> {
    let args = Args::parse();
-   println!("{:?}", args);
+
 
    use Action::*;
    match args.action {
       Start => start()?,
       Fin => fin()?,
-      Run => (),
-      _ => ()
+      Run { workflow_name } => run(&workflow_name)?,
+      List => list()?,
+      Print => (),
+      Delete => ()
    };
 
    Ok(())
