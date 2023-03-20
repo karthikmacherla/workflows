@@ -1,36 +1,24 @@
 # Workflows
 
+This powershell utility allows you to quickly write and save workflows without having to go through the trouble of writing shell scripts yourself. 
 
-## Functionality left to support
-P0:
-- Works on init
-
-P1's
-- Support other platforms 
-    * in order to do this right, I think I need to just build a completely separate utility that works for zsh. I *could* make it work but it won't always be more accurate. 
-    It's better for the user to request the specific package for the shell they're running rather than have it automatically figure out and fail. 
-- Relative vs absolute workflows
-
-Commands to support
-- wf start:
-    * make a copy of the current pwsh history
-    * set a flag in a shared folder that you're in start mode
-- wf fin
-    * find the change in the history since you've started
-    * save that to a location and make that an accessible binary
-- wf list
-    * list the open file names
-- wf run --name name
-    * run a specified binary
-- wf alias
+Simply hit `workflows.exe start`, type the commands you want, hit `workflows.exe fin` when done to save the sequence of commands you just executed. 
 
 
-# Done:
-P0's
-- Recording things. 
-- List'ing workflows
-- Running workflows
-- works for windows powershell
+# Setting up
 
-P1's
-- deleting workflows
+`cargo build --release` to generate the release binary and then move the `.\target\release\workflows.exe` to your desired location with your desired alias. 
+
+By default, this utility assumes the start command will look like `.*workflows.exe start`. If you alias the utility, you have to tell the utility what the new start command looks like with something like:
+
+`workflows.exe alias "wf start"`
+
+** This decision was taken in case you want to even alias out the `start` part of the recording process. You could hypothetically do something like:
+
+```
+Set-Alias start ".\workflows.exe start"
+```
+and then set the start to:
+
+`workflows.exe alias "start"`
+
